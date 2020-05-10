@@ -30,22 +30,125 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const asyncStorageProducts = await AsyncStorage.getItem(
+        '@goMarketPlace:produtcs',
+      );
+
+      if (asyncStorageProducts) {
+        setProducts(JSON.parse(asyncStorageProducts));
+      }
     }
 
     loadProducts();
   }, []);
 
   const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
+    const loadNewProduct = (
+      prevProducts: Product[],
+      newProduct: Product,
+    ): Product[] => {
+      const productExists = prevProducts.find(
+        prevProduct => prevProduct.id === newProduct.id,
+      );
+
+      if (productExists) {
+        const nextProductState = prevProducts.map(prevProduct => {
+          if (prevProduct.id === newProduct.id) {
+            return { ...prevProduct, quantity: prevProduct.quantity + 1 };
+          }
+
+          return prevProduct;
+        });
+
+        return [...nextProductState];
+      }
+
+      return [...prevProducts, { ...product, quantity: 1 }];
+    };
+
+    setProducts(prevProductState => loadNewProduct(prevProductState, product));
+
+    const asyncStorageProduct = JSON.parse(
+      (await AsyncStorage.getItem('@goMarketPlace:produtcs')) || '[]',
+    ) as Product[];
+
+    if (asyncStorageProduct) {
+      await AsyncStorage.setItem(
+        '@goMarketPlace:produtcs',
+        JSON.stringify(loadNewProduct(asyncStorageProduct, product)),
+      );
+    } else {
+      await AsyncStorage.setItem(
+        '@goMarketPlace:produtcs',
+        JSON.stringify([product]),
+      );
+    }
   }, []);
 
   const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
+    setProducts(prevProductState => {
+      const newProductState = prevProductState.map(product => {
+        if (product.id === id) {
+          return { ...product, quantity: product.quantity + 1 };
+        }
+
+        return product;
+      });
+
+      return newProductState;
+    });
+
+    const asyncStorageProduct = JSON.parse(
+      (await AsyncStorage.getItem('@goMarketPlace:produtcs')) || '[]',
+    ) as Product[];
+
+    if (asyncStorageProduct) {
+      const updatedProducts = asyncStorageProduct.map(product => {
+        if (product.id === id) {
+          return { ...product, quantity: product.quantity + 1 };
+        }
+
+        return product;
+      });
+
+      await AsyncStorage.setItem(
+        '@goMarketPlace:produtcs',
+        JSON.stringify(updatedProducts),
+      );
+    }
   }, []);
 
   const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
+    setProducts(prevProductState => {
+      const newProductState = prevProductState.map(product => {
+        if (product.id === id && product.quantity > 0) {
+          return { ...product, quantity: product.quantity - 1 };
+        }
+
+        return product;
+      });
+
+      return newProductState;
+    });
+
+    const asyncStorageProduct = JSON.parse(
+      (await AsyncStorage.getItem('@goMarketPlace:produtcs')) || '[]',
+    ) as Product[];
+
+    if (asyncStorageProduct) {
+      const updatedProducts = asyncStorageProduct.map(product => {
+        if (product.id === id) {
+          return { ...product, quantity: product.quantity - 1 };
+        }
+
+        return product;
+      });
+
+      await AsyncStorage.setItem(
+        '@goMarketPlace:produtcs',
+        JSON.stringify(updatedProducts),
+      );
+    }
   }, []);
 
   const value = React.useMemo(
